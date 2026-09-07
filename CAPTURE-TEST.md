@@ -95,3 +95,13 @@ as a fallback for builds/hook payloads that don't provide it. Re-ran both canari
 clean after the fix — both landed correctly, shown above. The debug instrumentation
 is still in the script (inert unless `CAPTURE_DEBUG=1` is set) since it's harmless and
 useful if the payload shape changes again.
+
+## Note: one disclosed redaction, for security not tidiness
+Mid-build, the user pasted a live Vercel API token and a Neon Postgres connection
+string (with password) directly into the chat in response to a credential request.
+The capture hook logged that prompt verbatim, as designed — but this repo is public,
+so leaving working credentials in `.agent-logs/` would have shipped a real secret
+leak. That one `PROMPT` entry (session `8ffc9948`, num=1) has the two secret values
+replaced with `<...REDACTED>` markers and an explanatory note; nothing else about the
+exchange is altered, trimmed, or removed. This is the only edit made to any log entry
+in this repository, and it's called out here rather than done silently.
