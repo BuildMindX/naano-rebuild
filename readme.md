@@ -1,68 +1,67 @@
-# naano — rebuilt
+# naano, rebuilt
 
-A rebuild of [naano.com](https://naano.com), a B2B LinkedIn creator marketplace, built in a single
-session as an 8x take-home assignment.
+This is my rebuild of [naano.com](https://naano.com) for the 8x take-home. Naano is a B2B
+marketplace where brands book LinkedIn creators for sponsored posts and track what those posts
+actually generate — clicks, leads, pipeline.
 
-**Live:** https://naano-rebuild-nine.vercel.app
-**Agent capture logs:** [`.agent-logs/`](.agent-logs/) · [`CAPTURE-TEST.md`](CAPTURE-TEST.md)
+Live: https://naano-rebuild-nine.vercel.app
+Agent logs for this build: [`.agent-logs/`](.agent-logs/), setup notes in [`CAPTURE-TEST.md`](CAPTURE-TEST.md)
 
-## What this is
+## What's actually here
 
-Naano connects B2B brands with LinkedIn creators for sponsored posts: brands find creators, brief
-them, track the clicks/leads/pipeline each post generates, and pay out per collaboration. This
-rebuild implements the full loop for both sides of the marketplace, backed by a real Postgres
-database (not a mock/localStorage demo):
+Both sides of the marketplace, running against a real Postgres database, not a demo with fake
+data baked in.
 
-**As a brand** — browse the creator marketplace (with audience-fit scoring computed against a
-campaign's target audience once you open it from inside a campaign), build a campaign brief with
-guided objective templates, invite creators or accept applicants, move each collaboration through
-its lifecycle (invited → accepted → draft submitted → scheduled → live → completed), attribute
-leads/pipeline value as they get matched in your CRM, and schedule + mark creator payouts.
+If you're a brand, you can browse creators (with a fit score once you're viewing them from inside
+a specific campaign, since fit only really makes sense against a target audience), write a brief,
+invite people or accept applicants, and move each collaboration through invited → accepted → draft
+→ scheduled → live → completed. Once a post is live you log leads and pipeline value as they get
+matched in your CRM, and schedule/mark payouts.
 
-**As a creator** — set up a public profile (niche, price per post, follower count, tags), browse
-and apply to open campaign briefs, accept or decline brand invites, submit your post with a unique
-tracked link, and see your earnings and payout status per collaboration.
+If you're a creator, you set up a profile, browse open briefs or wait for invites, accept or
+decline, submit your post with a tracked link, and watch your earnings.
 
-**Real click tracking** — every collaboration gets a unique `/t/<code>` link. Following it is a
-real HTTP redirect to the campaign's destination URL, and it increments a click counter and logs
-an event on that request — not simulated data.
+The tracked links are real — every collaboration gets a `/t/<code>` URL that actually redirects
+and actually increments a click counter on the request. That part isn't mocked.
 
-### What I deliberately left out
+A few things I skipped on purpose:
 
-- **No LinkedIn API integration** — impressions are self-reported by the creator at submission
-  time (same as the real product has to do, since LinkedIn doesn't expose third-party post
-  analytics). Clicks are the one metric that's genuinely tracked server-side.
-- **No AI-generated briefs** — "AI-powered brief creation" in the original becomes a guided
-  template picker here (objective → pre-filled creator guidelines you edit). Wiring an LLM in
-  would have meant asking for another API key for a feature that's cosmetic to the core loop.
-- **No contract/invoice documents** — the payment strip shows contract → invoice → payout as a
-  status lifecycle, but doesn't generate actual PDF documents.
-- **No messaging between brand and creator** — collaboration state (accept/decline, submit,
-  schedule) carries the workflow instead of freeform chat.
+Impressions are self-reported by the creator when they submit a post. This isn't laziness — the
+real naano has the same constraint, since LinkedIn doesn't hand out post analytics to third
+parties. Clicks are the one number in this app that's genuinely tracked server-side rather than
+typed in by someone.
+
+The "AI-powered brief creation" from the original product became a template picker here (pick an
+objective, get pre-filled creator guidelines you can edit). Wiring up an actual LLM call for that
+felt like the wrong thing to spend the credential-asking budget on given it's cosmetic to the core
+loop, not load-bearing.
+
+There's no PDF contract or invoice generation, just the status lifecycle (contract → invoice →
+payout) as a UI, and no in-app messaging between brand and creator — the collaboration's state
+transitions carry the conversation instead of a chat box.
 
 ## Stack
 
-- **Next.js 16** (App Router, Turbopack, Server Actions) + **TypeScript** + **Tailwind CSS v4**
-- **Postgres** (Neon, serverless) via **Drizzle ORM**
-- Auth: bcrypt password hashing + signed JWT session cookies (no third-party auth provider)
-- Deployed on **Vercel**
+Next.js 16 app router with server actions, TypeScript, Tailwind v4. Postgres on Neon via Drizzle.
+Auth is my own — bcrypt for passwords, signed JWT session cookies, no third-party provider.
+Deployed on Vercel.
 
 ## Data model
 
-`users` (brand or creator role) → `creator_profiles` (1:1 for creators) · `campaigns` (owned by a
-brand) → `campaign_creators` (the collaboration join row: status lifecycle, price, tracking code,
-impressions/clicks/leads/pipeline, payout status) → `click_events` (one row per real tracked
-click). See [`lib/db/schema.ts`](lib/db/schema.ts).
+`users` (role: brand or creator) → `creator_profiles` (one per creator) · `campaigns` (owned by a
+brand) → `campaign_creators`, which is really the collaboration row — status, price, tracking
+code, the impression/click/lead/pipeline numbers, payout status → `click_events`, one row per real
+tracked click. It's all in [`lib/db/schema.ts`](lib/db/schema.ts) if you want the exact columns.
 
-## Running locally
+## Running it locally
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in DATABASE_URL (Neon/Postgres) and SESSION_SECRET
-npx drizzle-kit push         # create tables
-npx tsx lib/db/seed.ts       # seed 12 demo creator profiles for the marketplace
+cp .env.example .env.local   # DATABASE_URL + SESSION_SECRET
+npx drizzle-kit push         # creates the tables
+npx tsx lib/db/seed.ts       # 12 demo creator profiles for the marketplace
 npm run dev
 ```
 
-Then sign up fresh as a brand and as a creator (two different browsers/incognito windows, or two
-accounts) to try both sides of the marketplace.
+Sign up as a brand in one window and a creator in another (or just two accounts) to see both
+sides talk to each other.

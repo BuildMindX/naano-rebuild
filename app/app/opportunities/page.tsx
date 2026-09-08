@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { campaigns, campaignCreators, users } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
 import { ApplyButton } from "./apply-button";
 
 export default async function OpportunitiesPage() {

@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { campaigns, campaignCreators, creatorProfiles, users } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
-import { generateTrackingCode } from "@/lib/utils";
+import { generateTrackingCode } from "@/lib/tracking";
 
 export type ActionState = { error?: string } | undefined;
 

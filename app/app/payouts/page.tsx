@@ -3,15 +3,10 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { campaignCreators, campaigns, users } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
-import { Badge } from "@/components/ui/stat-card";
-import { formatCurrency, PAYOUT_LABELS } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/format";
+import { PAYOUT_LABELS, PAYOUT_TONE } from "@/lib/status";
 import { PayoutRowActions } from "./payout-actions";
-
-const payoutTone: Record<string, "neutral" | "accent" | "success"> = {
-  not_scheduled: "neutral",
-  scheduled: "accent",
-  paid: "success",
-};
 
 export default async function PayoutsPage() {
   const user = await getCurrentUser();
@@ -71,7 +66,7 @@ export default async function PayoutsPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-ink">{formatCurrency(collab.price)}</span>
-                  <Badge tone={payoutTone[collab.payoutStatus]}>{PAYOUT_LABELS[collab.payoutStatus]}</Badge>
+                  <Badge tone={PAYOUT_TONE[collab.payoutStatus]}>{PAYOUT_LABELS[collab.payoutStatus]}</Badge>
                   <PayoutRowActions collabId={collab.id} payoutStatus={collab.payoutStatus} />
                 </div>
               </li>

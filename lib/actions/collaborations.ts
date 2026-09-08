@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { campaignCreators, campaigns, creatorProfiles } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
-import { generateTrackingCode } from "@/lib/utils";
+import { generateTrackingCode } from "@/lib/tracking";
 import { revalidatePath } from "next/cache";
 
 async function assertCreatorOwns(collabId: number, userId: number) {

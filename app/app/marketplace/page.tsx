@@ -3,8 +3,9 @@ import { db } from "@/lib/db";
 import { creatorProfiles, users, campaigns } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { formatCurrency, formatNumber, computeFitScore } from "@/lib/utils";
-import { Badge } from "@/components/ui/stat-card";
+import { formatCurrency, formatNumber } from "@/lib/format";
+import { computeFitScore } from "@/lib/fit-score";
+import { Badge } from "@/components/ui/badge";
 import { InviteButton } from "./invite-button";
 
 export default async function MarketplacePage({

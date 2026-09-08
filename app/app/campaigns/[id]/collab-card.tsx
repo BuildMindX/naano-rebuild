@@ -1,9 +1,10 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import { Badge } from "@/components/ui/stat-card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatNumber, STATUS_LABELS, PAYOUT_LABELS } from "@/lib/utils";
+import { formatCurrency, formatNumber } from "@/lib/format";
+import { STATUS_LABELS, STATUS_TONE, PAYOUT_LABELS } from "@/lib/status";
 import {
   respondToApplicantAction,
   advanceCollabStatusAction,
@@ -29,17 +30,6 @@ type Collab = {
   creatorHeadline: string;
 };
 
-const statusTone: Record<string, "neutral" | "accent" | "success" | "warning"> = {
-  invited: "neutral",
-  applied: "warning",
-  accepted: "accent",
-  declined: "neutral",
-  draft_submitted: "warning",
-  scheduled: "accent",
-  live: "success",
-  completed: "success",
-};
-
 export function CollabCard({ collab, siteUrl }: { collab: Collab; siteUrl: string }) {
   const [pending, startTransition] = useTransition();
   const [scheduledDate, setScheduledDate] = useState("");
@@ -58,7 +48,7 @@ export function CollabCard({ collab, siteUrl }: { collab: Collab; siteUrl: strin
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-ink">{formatCurrency(collab.price)}</span>
-          <Badge tone={statusTone[collab.status] ?? "neutral"}>{STATUS_LABELS[collab.status]}</Badge>
+          <Badge tone={STATUS_TONE[collab.status] ?? "neutral"}>{STATUS_LABELS[collab.status]}</Badge>
         </div>
       </div>
 

@@ -1,44 +1,39 @@
 # Capture Test
 
 ## Tool and model
-- **Tool:** Claude Code (CLI), invoked here via the VSCode extension host for the main
-  build session, and via the headless `claude -p` CLI for the two independent canary
-  tests below.
-- **Model:** Sonnet 5 (`claude-sonnet-5`). Single model plans and executes in this
-  session — no separate planner/executor split.
+Claude Code (CLI) — the main build ran through the VSCode extension host, and the two
+canary sessions below ran through the headless `claude -p` CLI directly. Model is
+Sonnet 5 (`claude-sonnet-5`) throughout, one model doing both planning and execution,
+no separate planner/executor.
 
-## Mechanism
-Claude Code hooks, configured in [.claude/settings.json](.claude/settings.json):
+## How the hook works
+Wired through Claude Code hooks in [.claude/settings.json](.claude/settings.json).
 
-- `UserPromptSubmit` fires on every prompt the user submits. Its JSON stdin payload
-  includes `session_id`, `transcript_path`, `cwd`, and the verbatim `prompt` text.
-- `Stop` fires at the end of every turn. Its JSON stdin payload includes `session_id`
-  and (on this Claude Code build) a `last_assistant_message` field containing the
-  final assistant text directly — no transcript parsing required. As a fallback for
-  builds that don't provide that field, the script also parses `transcript_path`
-  (the session's `.jsonl` transcript) and takes the last `assistant`-type entry's
-  text content.
+`UserPromptSubmit` fires on every prompt. Its JSON stdin gives me `session_id`,
+`transcript_path`, `cwd`, and the prompt text verbatim.
 
-Both events run [.claude/hooks/capture.py](.claude/hooks/capture.py), which:
-1. Looks up (or creates) a per-session log file in `.agent-logs/` named
-   `YYYY-MM-DD_HH-MM-SS_<session-id>.md`, keyed by `session_id` so every session gets
-   its own file regardless of which terminal/window started it.
-2. Appends a `[LOG_ENTRY type=PROMPT ...]` block on `UserPromptSubmit` or a
-   `[LOG_ENTRY type=RESPONSE ...]` block on `Stop`, each with a UTC timestamp and the
-   model name.
-3. Updates the file's frontmatter (`total_exchanges`, `last_prompt_time`).
+`Stop` fires at the end of every turn. On this Claude Code build its stdin payload
+already includes a `last_assistant_message` field with the final response text, so I
+didn't need to parse the transcript at all — I kept a transcript-parsing fallback in
+the script anyway in case a different build doesn't send that field.
 
-Nothing is invoked manually — both hooks are registered declaratively in
-`.claude/settings.json`, which Claude Code loads for any session started in this repo.
+Both hooks run [.claude/hooks/capture.py](.claude/hooks/capture.py). It finds or
+creates a per-session file in `.agent-logs/` named `YYYY-MM-DD_HH-MM-SS_<session-id>.md`
+(keyed by session id, so it doesn't matter which terminal or window started the
+session), appends a `PROMPT` or `RESPONSE` log block with a UTC timestamp and model
+name, and bumps the file's frontmatter counters. Nothing here runs manually — both
+hooks are just declared in `.claude/settings.json` and Claude Code picks them up for
+any session started in this repo.
 
-## Log file path for the canaries
+## Log files for the canaries
 - `.agent-logs/2026-09-07_17-53-54_27b9429d-7f58-4176-b3e5-50569637ec16.md` (session 1)
 - `.agent-logs/2026-09-07_17-54-05_508e05cc-a833-4437-ae66-c0aa9c331c7f.md` (session 2)
 
-Two **independent** sessions were used (not two prompts in one session) by launching
-`claude -p "<canary>"` twice from a plain shell — each invocation gets its own
-`session_id` and therefore its own log file, proving the hook is installed at the
-project level and not something that only works inside the session that created it.
+These are two genuinely separate sessions, not two prompts in one — I ran
+`claude -p "<canary>"` twice from a plain shell, and each invocation got its own
+session id and its own log file. That's the point: it shows the hook is installed at
+the project level, not something that happens to work only in the session that set
+it up.
 
 ## Canary entries (raw, pasted from the files above)
 
@@ -80,28 +75,24 @@ Your prompt just got captured correctly: `.agent-logs/2026-09-07_17-54-05_508e05
 There's also a second, near-duplicate log file (`..._27b9429d-...md`) from the same minute — likely a separate session/duplicate hook fire. Let me know if you want me to check that one or verify the response entry gets written after this turn.
 ```
 
-## What did not work first try
-The first canary attempt used a `Stop`-hook implementation that only parsed
-`transcript_path` (the session's `.jsonl` transcript) for the last `assistant`-type
-entry's text. On the very first run (headless `claude -p`), the RESPONSE entry came
-back as `(no text response captured for this turn)` — the transcript read at hook
-time did not yield the assistant text reliably (likely a timing/flush issue against
-the on-disk transcript in headless mode). Rather than fight that race, I added debug
-instrumentation (`CAPTURE_DEBUG=1` env var, writes the raw hook stdin to
-`/tmp/capture_debug.log`) and discovered the `Stop` payload on this Claude Code build
-already includes a `last_assistant_message` field with the final response text
-directly. Switched the script to prefer that field, keeping the transcript parse only
-as a fallback for builds/hook payloads that don't provide it. Re-ran both canaries
-clean after the fix — both landed correctly, shown above. The debug instrumentation
-is still in the script (inert unless `CAPTURE_DEBUG=1` is set) since it's harmless and
-useful if the payload shape changes again.
+## What didn't work on the first try
+My first version of the `Stop` hook only parsed `transcript_path` for the last
+`assistant`-type entry. On the very first run it came back with
+`(no text response captured for this turn)` instead of the actual response — reading
+the on-disk transcript right when the hook fires wasn't reliable in headless mode,
+probably a timing/flush issue. Instead of chasing that race condition, I added a
+`CAPTURE_DEBUG=1` flag that dumps the raw hook stdin to a temp file, ran it again, and
+found the `Stop` payload on this build already hands you a `last_assistant_message`
+field with the final text — no transcript parsing needed. Switched to that, kept the
+transcript parse as a fallback, and both canaries landed clean after that. The debug
+flag is still in the script; it's harmless when unset.
 
-## Note: one disclosed redaction, for security not tidiness
-Mid-build, the user pasted a live Vercel API token and a Neon Postgres connection
-string (with password) directly into the chat in response to a credential request.
-The capture hook logged that prompt verbatim, as designed — but this repo is public,
-so leaving working credentials in `.agent-logs/` would have shipped a real secret
-leak. That one `PROMPT` entry (session `8ffc9948`, num=1) has the two secret values
-replaced with `<...REDACTED>` markers and an explanatory note; nothing else about the
-exchange is altered, trimmed, or removed. This is the only edit made to any log entry
-in this repository, and it's called out here rather than done silently.
+## One redaction, and why
+Partway through the build I asked for deploy credentials, and the reply pasted a live
+Vercel token and a Neon connection string straight into the chat. The hook logs
+prompts verbatim, which is exactly right most of the time, but this repo is public —
+shipping working credentials in `.agent-logs/` would have been a real leak, not a
+style problem. So that one `PROMPT` entry (session `8ffc9948`, num=1) has the two
+secret values swapped for `<...REDACTED>` markers with a note explaining why; nothing
+else in that exchange was touched. It's the only edit made to any log entry in this
+repo, and I'm calling it out here instead of doing it quietly.

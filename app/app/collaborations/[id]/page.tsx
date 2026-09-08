@@ -3,8 +3,9 @@ import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { campaignCreators, campaigns, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Badge } from "@/components/ui/stat-card";
-import { formatCurrency, formatNumber, STATUS_LABELS, PAYOUT_LABELS } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency, formatNumber } from "@/lib/format";
+import { STATUS_LABELS, PAYOUT_LABELS } from "@/lib/status";
 import { InviteResponse, SubmitPostForm } from "./actions";
 import { headers } from "next/headers";
 

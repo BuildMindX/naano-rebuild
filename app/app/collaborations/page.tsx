@@ -3,20 +3,10 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { campaignCreators, campaigns, users } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { Badge } from "@/components/ui/stat-card";
-import { formatCurrency, STATUS_LABELS } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/format";
+import { STATUS_LABELS, STATUS_TONE } from "@/lib/status";
 import Link from "next/link";
-
-const statusTone: Record<string, "neutral" | "accent" | "success" | "warning"> = {
-  invited: "neutral",
-  applied: "warning",
-  accepted: "accent",
-  declined: "neutral",
-  draft_submitted: "warning",
-  scheduled: "accent",
-  live: "success",
-  completed: "success",
-};
 
 export default async function CollaborationsPage() {
   const user = await getCurrentUser();
@@ -48,7 +38,7 @@ export default async function CollaborationsPage() {
                     <p className="font-medium text-ink">{campaign.title}</p>
                     <p className="text-sm text-black/50">{brand.companyName || brand.name} · {formatCurrency(collab.price)}</p>
                   </div>
-                  <Badge tone={statusTone[collab.status] ?? "neutral"}>{STATUS_LABELS[collab.status]}</Badge>
+                  <Badge tone={STATUS_TONE[collab.status] ?? "neutral"}>{STATUS_LABELS[collab.status]}</Badge>
                 </Link>
               </li>
             ))}

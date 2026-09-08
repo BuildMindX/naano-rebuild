@@ -4,10 +4,12 @@ import { db } from "@/lib/db";
 import { campaigns, campaignCreators, users, creatorProfiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { LinkButton } from "@/components/ui/button";
-import { Badge } from "@/components/ui/stat-card";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/ui/stat-card";
+import { formatCurrency, formatNumber } from "@/lib/format";
 import { CollabCard } from "./collab-card";
 import { StatusControl } from "./status-control";
+import { CampaignBrief } from "./campaign-brief";
 import { headers } from "next/headers";
 
 export default async function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -62,50 +64,14 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="rounded-2xl border border-black/10 bg-white p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-black/50">Attributed pipeline</p>
-          <p className="mt-2 text-2xl font-semibold text-ink">{formatCurrency(totals.pipeline)}</p>
-        </div>
-        <div className="rounded-2xl border border-black/10 bg-white p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-black/50">Impressions</p>
-          <p className="mt-2 text-2xl font-semibold text-ink">{formatNumber(totals.impressions)}</p>
-        </div>
-        <div className="rounded-2xl border border-black/10 bg-white p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-black/50">Clicks</p>
-          <p className="mt-2 text-2xl font-semibold text-ink">{formatNumber(totals.clicks)}</p>
-        </div>
-        <div className="rounded-2xl border border-black/10 bg-white p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-black/50">Leads</p>
-          <p className="mt-2 text-2xl font-semibold text-ink">{formatNumber(totals.leads)}</p>
-        </div>
+        <StatCard label="Attributed pipeline" value={formatCurrency(totals.pipeline)} />
+        <StatCard label="Impressions" value={formatNumber(totals.impressions)} />
+        <StatCard label="Clicks" value={formatNumber(totals.clicks)} />
+        <StatCard label="Leads" value={formatNumber(totals.leads)} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-black/10 bg-white p-6 lg:col-span-1">
-          <h2 className="mb-4 font-semibold text-ink">Brief</h2>
-          <dl className="space-y-4 text-sm">
-            <div>
-              <dt className="text-black/40">Target audience</dt>
-              <dd className="mt-1 text-ink">{campaign.targetAudience || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-black/40">Key messages</dt>
-              <dd className="mt-1 whitespace-pre-wrap text-ink">{campaign.keyMessages || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-black/40">Creator guidelines</dt>
-              <dd className="mt-1 whitespace-pre-wrap text-ink">{campaign.creatorGuidelines || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-black/40">Landing URL</dt>
-              <dd className="mt-1 break-all text-ink">{campaign.landingUrl || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-black/40">Budget</dt>
-              <dd className="mt-1 text-ink">{formatCurrency(campaign.budget)}</dd>
-            </div>
-          </dl>
-        </div>
+        <CampaignBrief campaign={campaign} />
 
         <div className="space-y-4 lg:col-span-2">
           <h2 className="font-semibold text-ink">Collaborators ({collabRows.length})</h2>

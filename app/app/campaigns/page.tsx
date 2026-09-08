@@ -4,8 +4,8 @@ import { db } from "@/lib/db";
 import { campaigns, campaignCreators } from "@/lib/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
 import { LinkButton } from "@/components/ui/button";
-import { Badge } from "@/components/ui/stat-card";
-import { formatCurrency } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/format";
 import Link from "next/link";
 
 export default async function CampaignsPage() {

@@ -2,9 +2,11 @@ import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { campaigns, campaignCreators, users, creatorProfiles } from "@/lib/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
-import { StatCard, Badge } from "@/components/ui/stat-card";
+import { StatCard } from "@/components/ui/stat-card";
+import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
-import { formatCurrency, formatNumber, STATUS_LABELS } from "@/lib/utils";
+import { formatCurrency, formatNumber } from "@/lib/format";
+import { STATUS_LABELS } from "@/lib/status";
 import Link from "next/link";
 
 export default async function DashboardPage() {
